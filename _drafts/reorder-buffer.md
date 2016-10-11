@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Reorder Buffer
+category: Instruction Architecture
 ---
 
 # Precise exception handling #
