@@ -1,0 +1,6 @@
+[ ] Reorder buffer
+[ ] Copy and swap
+[ ] Vector pop and back seperation
+[ ] RAII
+[ ] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
+[ ] Be carefull about this capture in lambda
