@@ -1,15 +1,16 @@
-title: Thomas Ding
+title: Thomas Ding's Blog
+author: Thomas Ding
 email: thomasbyding@gmail.com
 description: >
-  Thomas Ding's Blog site covering many interesting programming techniques,
-  including instruction-level optimization, C++ features and so on.
+  Covering instruction-level optimization, C++ features, best practices and so
+  many other interesting topics.
 baseurl: ""
-url: "http://www.thomasding.net"
+url: "http://thomasding.github.io"
 github_username:  thomasding
 
-# Build settings
+excerpt_separator: <!--more-->
+
 markdown: kramdown
-theme: minima
 gems:
   - jekyll-feed
 exclude:

@@ -3,11 +3,11 @@ layout: post
 title: Tomasulo Algorithm
 ---
 
-# Out-of-order execution #
-
 Tomasulo algorithm is an out-of-order execution policy. The philosophy of
 Tomasulo algorithm is to execute an operation as soon as the required conditions
 are satisfied in spite of the order of instructions.
+
+<!--more-->
 
 A processor, for example, is executing the following three instructions:
 
@@ -33,7 +33,7 @@ directly stored in the slot or the result of a previous instruction that has
 not completed, in which situation the value is the index of the reservation
 station slot that produces the result.
 
-{% include svg name="reservation-station" caption="An example of reservation station" %}
+{% include svg.html name="reservation-station" caption="An example of reservation station" %}
 
 In the example above, the two source operands in the first reservation station
 slot are both ready, and hence the instruction can be executed as soon as the
@@ -51,7 +51,7 @@ the register or waiting to be computed by a reservation station slot) and the
 index of the reservation station slot to produce the value (only valid when 
 the value is waiting to be computed).
 
-{% include svg name="register-file" caption="An example of register file" %}
+{% include svg.html name="register-file" caption="An example of register file" %}
 
 In the example, the value of r0 and r1 is 0x3A and 0x3D, respectively. However,
 the value of r2 has not been computed yet and its value is the result of the
@@ -60,7 +60,7 @@ register and hence meaningless in this situation.
 
 # Implementation #
 
-{% include svg name="implementation" caption="An example of simple implementation" %}
+{% include svg.html name="implementation" caption="An example of simple implementation" %}
 
 In Tomasulo algorithm, the life cycle of an instruction composes of three stages:
 issue, execute and write back.
