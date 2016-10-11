@@ -1,11 +1,11 @@
-title: Thomas Ding's Blog
+title: tding.in
 author: Thomas Ding
 email: thomasbyding@gmail.com
 description: >
   Covering instruction-level optimization, C++ features, best practices and so
   many other interesting topics.
 baseurl: ""
-url: "http://thomasding.github.io"
+url: "http://tding.in"
 github_username:  thomasding
 
 excerpt_separator: <!--more-->
