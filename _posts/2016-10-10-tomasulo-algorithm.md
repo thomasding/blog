@@ -2,6 +2,7 @@
 layout: post
 title: Tomasulo Algorithm
 category: Instruction Architecture
+comments: true
 ---
 
 Tomasulo algorithm is an out-of-order execution policy. The philosophy of
