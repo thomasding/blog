@@ -18,4 +18,4 @@ exclude:
   - Gemfile.lock
 
 disqus:
-  shotname: tding
+  shortname: tding
