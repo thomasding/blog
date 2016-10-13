@@ -2,6 +2,7 @@
 layout: post
 title: Tomasulo Algorithm
 tags: [architecture]
+comments: true
 ---
 
 Tomasulo algorithm is an out-of-order execution policy. The philosophy of
