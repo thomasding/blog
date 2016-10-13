@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Reorder Buffer
-category: Instruction Architecture
+tags: [architecture]
 ---
 
 In the plain Tomasulo algorithm introduced by [Tomasulo Algorithm][1], the
