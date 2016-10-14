@@ -1,5 +1,6 @@
 [X] Reorder buffer
 [ ] Copy and swap
+[ ] swap noexcept specification
 [ ] Vector pop and back seperation
 [ ] RAII
 [ ] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
