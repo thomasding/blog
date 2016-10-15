@@ -1,7 +1,8 @@
 [X] Reorder buffer
-[ ] Copy and swap
+[X] Copy and swap
+[ ] Allocator
 [ ] swap noexcept specification
-[ ] Vector pop and back seperation
+[X] Vector pop and back seperation
 [ ] RAII
 [ ] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
 [ ] Be careful about this capture in lambda
