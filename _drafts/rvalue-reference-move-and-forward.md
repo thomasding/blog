@@ -59,9 +59,9 @@ reason why rvalue references are added to C++11.
 
 # Move constructor and move assignment #
 
-The syntax of declaring a lvalue reference is appending an ampersand (\&) to the
+The syntax of declaring a lvalue reference is appending an ampersand (&) to the
 type, such as int& and string&. Similarly, to declare a rvalue reference, you
-need to append two ampersands (\&\&) like int&& and string&&.
+need to append two ampersands (&&) like int&& and string&&.
 
 Provided rvalue references, there will be two ways to construct a new object
 from another existing one, copying or stealing the resources from it depending
