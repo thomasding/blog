@@ -3,8 +3,9 @@
 [ ] Allocator
 [ ] swap noexcept specification
 [X] Vector pop and back seperation
-[ ] RAII
+[X] RAII
 [X] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
+[ ] smart pointers
 [ ] Be careful about this capture in lambda
 [ ] Generator in python
 [ ] Property in python
