@@ -18,4 +18,6 @@
 [ ] use <algorithm>, decomposing loop into iterator operation and action
 [ ] Iterator and more
 [ ] std::bind implementation
+[ ] template metaprogramming over LISP
 [ ] std::any implementation without RTTI
+[ ] metaprogramming over type
