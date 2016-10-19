@@ -20,4 +20,5 @@
 [ ] std::bind implementation
 [ ] template metaprogramming over LISP
 [ ] std::any implementation without RTTI
-[ ] metaprogramming over type
+[ ] metaprogramming with map and reduce
+[ ] metaprogramming over computing graph
