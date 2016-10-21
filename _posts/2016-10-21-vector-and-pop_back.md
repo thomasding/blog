@@ -96,4 +96,4 @@ designer of class T's responsibility to write exception-safe copy or move
 operations. Even if the copy or move operation on the object fails, the vector
 itself is not affected. As long as the object keeps its original value, it can
 be moved or copied again after the exception is properly handled. No memory
-leak, no data loss. The implementation becomes exception-safe.
+leak, no data loss.
