@@ -2,6 +2,9 @@
 [X] Copy and swap
 [ ] Allocator
 [ ] swap noexcept specification
+[ ] Python multithreading/multiprocessing
+[ ] Fork in multithreading unsafe
+[ ] Concurrency and implementation
 [X] Vector pop and back seperation
 [X] RAII
 [X] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
