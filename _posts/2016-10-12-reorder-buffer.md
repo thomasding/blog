@@ -37,7 +37,7 @@ already be overwritten. In order that branch prediction unit works properly, the
 processor must provide a rollback approach to cancel all the executed
 instructions after a branching point.
 
-# In-order commit #
+## In-order commit ##
 
 Besides the three stages of Tomasulo algorithm, namely, **issue**, **execution**
 and **write back**, a new stage called **commit** is introduced at the end of
@@ -46,7 +46,7 @@ at the **write back** stage, and then committed in the order of the
 instruction sequence. Should any exception happen or branch prediction be proven
 wrong, the buffered uncommitted instructions would be invalidated at once.
 
-# Implementation #
+## Implementation ##
 
 A reorder buffer is usually implemented as a ring buffer. Each item in the
 reorder buffer records the type, destination register or memory address, value

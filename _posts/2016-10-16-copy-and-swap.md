@@ -21,7 +21,7 @@ object keeps its original value.
 
 <!--more-->
 
-# Copy-and-swap by example #
+## Copy-and-swap by example ##
 
 The following copy assignment operator suffers from exception damage.
 
@@ -73,7 +73,7 @@ void swap(User& a, User& b) {
 }
 ```
 
-# The right way to define a swap function #
+## The right way to define a swap function ##
 
 In the code above, you may find some interesting places in the implementation, like:
 
@@ -118,7 +118,7 @@ The reason why we should not use the namespace-qualified swap (one with `std::`
 prefix) is a C++ name lookup rule named **argument-dependent lookup**,
 abbreviated as **ADL**.
 
-# The right way to call a swap function #
+## The right way to call a swap function ##
 
 Curious readers may have found that in the implementation of User, we define
 the non-member swap function in our own namespace, outside of namespace std.
@@ -157,7 +157,7 @@ std is called. However, it will result in our swap function to be called
 twice. What? I've heard you say. Here, let's have a look at the default version
 of std::swap to figure it out. 
 
-# How is std::swap implemented #
+## How is std::swap implemented ##
 
 Two versions of swap are provided by STL, one for generalized types,
 and the other specifically for arrays.
@@ -231,7 +231,7 @@ void iter_swap( ForwardIt a, ForwardIt b) {
 For those readers who are not familiar to iterators, you can simply regard them
 as pointers. Don't be afraid of them, for they are designed to work like pointers.
 
-# Do swap throws? #
+## Do swap throws? ##
 
 All the guarantee brought by copy-and-swap idiom is merely based on a plausible
 assumption that swap never throws. Considering the implementation of swap

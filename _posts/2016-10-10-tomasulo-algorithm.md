@@ -25,7 +25,7 @@ get the value of r2, while [3] has no dependency on the result of
 [1] or [2]. If the processor executes the instructions with out-of-order
 execution policy, [3] may be finished by the adder before [2].
 
-# Reservation station #
+## Reservation station ##
 
 In Tomasulo algorithm, each functional unit (such as a multiplier or an adder)
 has a reservation station that consists of many slots, each slots of which
@@ -45,7 +45,7 @@ computation on the first reservation station slot. Either source operand in the
 third reservation station slot is not available yet and depends on the first and
 second, respectively.
 
-# Register file #
+## Register file ##
 
 In addition to the values of the registers, the register file contains the
 validity of each register (to indicate whether the value is directly stored in
@@ -60,7 +60,7 @@ the value of r2 has not been computed yet and its value is the result of the
 operation on the second reservation station slot. 0x34 is the old value of the
 register and hence meaningless in this situation.
 
-# Implementation #
+## Implementation ##
 
 {% include svg.html name="implementation" caption="An example of simple implementation" %}
 
@@ -82,7 +82,7 @@ issue, execute and write back.
    reservation station slots that wait for the value by setting the status to
    valid and the value to the result.
 
-# How Tomasulo algorithm eliminate WAR and WAW hazard and minimizes RAW dependency.
+## How Tomasulo algorithm eliminate WAR and WAW hazard and minimizes RAW dependency. ##
 
 In the situation that a write operation is followed by another write, RS of the
 destination register is the index of the reservation station slot of the last
