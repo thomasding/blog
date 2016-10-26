@@ -2,8 +2,8 @@
 [X] Copy and swap
 [ ] Allocator
 [ ] swap noexcept specification
-[ ] Python multithreading/multiprocessing
-[ ] Fork in multithreading unsafe
+[X] Python multithreading/multiprocessing
+[X] Fork in multithreading unsafe
 [ ] Concurrency and implementation
 [X] Vector pop and back seperation
 [X] RAII
