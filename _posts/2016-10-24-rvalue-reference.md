@@ -247,5 +247,5 @@ Note that this pointer itself is rvalue, which means you cannot assign it to a
 new value (and it is meaningless to do so), while dereferencing it is a lvalue,
 according to the rule, like `*this`.
 
-[1]: #
+[1]: {% post_url 2016-10-16-copy-and-swap %}
 [2]: http://en.cppreference.com/w/cpp/language/value_category
