@@ -10,6 +10,12 @@ class unique_ptr {
   // Constructor that makes a unique_ptr that holds the given object.
   explicit unique_ptr(T* p) noexcept : ptr_(p) {}
 
+  // Implicit type conversions between unique_ptrs.
+  template <typename U>
+  unique_ptr(unique_ptr<U>&& u) noexcept : ptr_(u.ptr_) {
+    u.ptr_ = nullptr;
+  }
+
   // Move constructor. Transfer the object from u to this object.
   unique_ptr(unique_ptr&& u) noexcept : ptr_(u.ptr_) { u.ptr_ = nullptr; }
 
@@ -69,7 +75,7 @@ void test() {
 
 struct add2 {
   int value;
-  constexpr add2(int a, int b): value(a + b) {}
+  constexpr add2(int a, int b) : value(a + b) {}
 };
 
 int bar();
@@ -80,7 +86,7 @@ struct XX {
 };
 
 void foo() {
-  int b = XX<add2(1,3).value>::value;
+  int b = XX<add2(1, 3).value>::value;
   (void)b;
 }
 

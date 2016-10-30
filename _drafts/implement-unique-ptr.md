@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Implementing unique_ptr
+title: "Implementing unique_ptr: the Basics"
 tags: [c++]
 comments: true
 ---
@@ -69,6 +69,9 @@ class unique_ptr {
   // pointer, like *uptr and uptr->member.
   T& operator*() const noexcept { return *ptr_; }
   T* operator->() const noexcept { return ptr_; }
+  
+  // Check whether it holds an object.
+  explicit operator bool() const noexcept { return ptr_ == nullptr; }
 
  private:
   T* ptr_;
@@ -198,9 +201,9 @@ Read [Rvalue Reference][2] for details.
 ## Upcasting unique\_ptr ##
 
 We can assign an object to a pointer that points to its base type, which is
-called **upcasting**. However, in the unique\_ptr above, we cannot easily upcast
-a unique\_ptr to one that points to the base class. For example, the following
-code won't work.
+called **upcasting**. However, in the **unique\_ptr** above, we cannot upcast a
+**unique\_ptr** to one that points to the base class, because they are different
+types from the compiler's view. For example, the following code won't work.
 
 ```c++
 struct A {};
@@ -208,6 +211,44 @@ struct B : A {};
 unique_ptr<B> pb = unique_ptr<B>(new B);
 unique_ptr<A> pa = std::move(pb);           // Compile error.
 ```
+
+In order to upcast a unique\_ptr, we add an constructor template that can be used
+in implicit type conversions to it.
+
+```c++
+template <typename T>
+class unique_ptr {
+  // ...
+  // Implicit type conversions between unique_ptrs.
+  template <typename U>
+  unique_ptr(unique_ptr<U>&& u) noexcept : ptr_(u.ptr_) {
+    u.ptr_ = nullptr;
+  }
+  // ...
+};
+```
+
+Thus, when we are implicitly converting an object of **unique\_ptr\<A\>** to one
+of **unique\_ptr\<B\>**, the compiler will instantiate a constructor from the
+template that accepts **unique\_ptr\<A\>** as its argument. Because the compiler
+checks types after template instantiation, if A is found not convertible to B,
+the compiler will report errors. Otherwise, the conversion will be done.
+
+One may consider the constructor template above as a generalized version for
+a move constructor. However, **the move/copy constructors must be explicitly
+defined even if a matchable template is given**. That's because the compiler
+will add a default move/copy constructor to the class if one is not found.
+However, when checking existing constructors, the compiler won't go for
+templates. Therefore, the move/copy constructors must be explicitly given.
+Otherwise, the compiler will provide a default one instead of instantiating a
+constructor template.
+
+## To be continued ##
+
+Although our **unique\_ptr** can be used in simple situations, it still misses
+some important features in comparison to the STL version. In the following
+posts, we are going to fulfill the it by supporting ownership releasing, custom
+deleters and type traits, making it more powerful.
 
 [1]: {% post_url 2016-10-16-copy-and-swap %}
 [2]: {% post_url 2016-10-24-rvalue-reference %}
