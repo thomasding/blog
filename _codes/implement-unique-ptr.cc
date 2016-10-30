@@ -1,6 +1,11 @@
 #include <utility>
 
 template <typename T>
+struct default_deleter {
+  void operator()(T* ptr) noexcept { delete ptr; }
+};
+
+template <typename T, typename Deleter = default_deleter<T>>
 class unique_ptr {
  public:
   // Constructors that makes an empty unique_ptr.
@@ -10,14 +15,23 @@ class unique_ptr {
   // Constructor that makes a unique_ptr that holds the given object.
   explicit unique_ptr(T* p) noexcept : ptr_(p) {}
 
+  // Constructor that accepts a raw pointer and a deleter.
+  unique_ptr(T* p, const Deleter& d) noexcept : ptr_(p), deleter_(d) {}
+  unique_ptr(T* p, typename std::remove_reference<Deleter>::type&& d) noexcept
+      : ptr_(p), deleter_(std::move(d)) {}
+
   // Implicit type conversions between unique_ptrs.
-  template <typename U>
-  unique_ptr(unique_ptr<U>&& u) noexcept : ptr_(u.ptr_) {
+  template <typename U, typename E>
+  unique_ptr(unique_ptr<U, E>&& u) noexcept
+      : ptr_(u.ptr_), deleter_(std::move(u.deleter_)) {
     u.ptr_ = nullptr;
   }
 
   // Move constructor. Transfer the object from u to this object.
-  unique_ptr(unique_ptr&& u) noexcept : ptr_(u.ptr_) { u.ptr_ = nullptr; }
+  unique_ptr(unique_ptr&& u) noexcept
+      : ptr_(u.ptr_), deleter_(std::move(u.deleter_)) {
+    u.ptr_ = nullptr;
+  }
 
   // Move assignment operator can be implemented by swapping.
   unique_ptr& operator=(unique_ptr&& u) noexcept {
@@ -29,6 +43,7 @@ class unique_ptr {
   void swap(unique_ptr& other) noexcept {
     using std::swap;
     swap(ptr_, other.ptr_);
+    swap(deleter_, other.deleter_);
   }
 
   // Explicitly delete the copy constructor and copy assignment operator.
@@ -39,7 +54,7 @@ class unique_ptr {
   ~unique_ptr() {
     // Delete the object if the unique_ptr is holding one.
     if (ptr_) {
-      delete ptr_;
+      deleter_(ptr_);
     }
   }
 
@@ -51,12 +66,20 @@ class unique_ptr {
   T& operator*() const noexcept { return *ptr_; }
   T* operator->() const noexcept { return ptr_; }
 
+  // Renounce the ownership.
+  T* release() noexcept {
+    T* p = ptr_;
+    ptr_ = nullptr;
+    return p;
+  }
+
  private:
   T* ptr_;
+  Deleter deleter_;
 };
 
-template <typename T>
-void swap(unique_ptr<T>& a, unique_ptr<T>& b) noexcept {
+template <typename T, typename D>
+void swap(unique_ptr<T, D>& a, unique_ptr<T, D>& b) noexcept {
   a.swap(b);
 }
 
@@ -93,4 +116,4 @@ void foo() {
 struct Person {
   int age;
   Person(int a) : age(a) {}
-}
+};

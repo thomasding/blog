@@ -8,7 +8,8 @@
 [X] Vector pop and back seperation
 [X] RAII
 [X] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
-[ ] smart pointers
+[X] smart pointers
+[X] implementation of unique_ptr
 [ ] Be careful about this capture in lambda
 [ ] Generator in python
 [ ] Property in python
