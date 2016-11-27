@@ -10,11 +10,9 @@
 [X] Forward and move: title like "std::move Never Moves, While std::forward Always Forwards"
 [X] smart pointers
 [X] implementation of unique_ptr
-[ ] Be careful about this capture in lambda
 [ ] Generator in python
 [ ] Property in python
-[ ] Template designed component STL like design pattern
-[ ] SFINAE
+[X] SFINAE
 [ ] CRTP for cloning and static polymorphism
 [ ] vector resize implementation
 [ ] implementation of shared_ptr (w or w/o weak_ptr)
