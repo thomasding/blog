@@ -21,9 +21,8 @@ layout: default
     {{ content }}
   </div>
 
-  {% if site.disqus.shortname %}
-    {% include disqus_comments.html %}
-  {% endif %}
 </article>
 
-{% include disqus_comments.html %}
+{% if site.isso.url %}
+  {% include isso_comments.html %}
+{% endif %}
