@@ -21,8 +21,6 @@ layout: default
     {{ content }}
   </div>
 
+  {% include isso_comments.html %}
 </article>
 
-{% if site.isso.url %}
-  {% include isso_comments.html %}
-{% endif %}

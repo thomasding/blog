@@ -17,4 +17,4 @@ exclude:
   - Gemfile.lock
 
 isso:
-  - url: //tomatoast.pw/isso
+  url: //tomatoast.pw/isso
