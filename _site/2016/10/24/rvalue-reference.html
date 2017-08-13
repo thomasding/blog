@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Rvalue Reference</title>
+  <meta name="description" content="Rvalue reference is a new feature introduced by C++11 that seems confusing at first sight. After all, why do we need another reference type in the existence ...">
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://tding.in/2016/10/24/rvalue-reference.html">
+  <link rel="alternate" type="application/rss+xml" title="tding.in" href="/feed.xml">
+  
+  
+</head>
+
+
+  <body>
+
+    <header class="site-header" role="banner">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">tding.in</a>
+
+    <nav class="site-nav">
+      <span class="menu-icon">
+        <svg viewBox="0 0 18 15" width="18px" height="15px">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </span>
+
+      <div class="trigger">
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/archive/">Archive</a>
+          
+        
+          
+          <a class="page-link" href="/tags/">Tags</a>
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Rvalue Reference</h1>
+    <div class="post-meta">
+      <time datetime="2016-10-24T00:00:00+08:00" itemprop="datePublished">Oct 24, 2016</time>
+      <ul class="post-tags post-meta">
+        
+        <li>
+          <a href="/tags/#c++" class="post-tag">c++</a>
+        </li>
+        
+      </ul>
+    </div>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Rvalue reference is a new feature introduced by C++11 that seems confusing at
+first sight. After all, why do we need another reference type in the existence
+of one already?</p>
+
+<p>Briefly speaking, a rvalue reference is bound to a temporary object. By
+contrast, a lvalue reference is bound to other objects. Besides, a lvalue
+reference to const, such as const MyClass&amp;, can be bound to a temporary object,
+too, which is the only way to bind to a temporary one prior to C++11.</p>
+
+<p>But the explanation above says nothing about why we need a new reference type
+specially for temporary objects. The simple way to explain it is: <strong>Lvalue and
+rvalue references are used to overload a function so that the rvalue reference
+version can be implemented based on the knowledge that the argument passed to it
+is temporary.</strong></p>
+
+<!--more-->
+
+<h1 id="the-importance-of-rvalue-references">The importance of rvalue references</h1>
+
+<p>A temporary object is one that is created and destroyed inside an expression.
+The most obvious difference of a temporary object from others is that it has no
+names and can only be referred to once.</p>
+
+<p>The following examples clearly demonstrate when a temporary object is created.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="c1">// A temporary int is created to store the value of a + b.
+</span><span class="kt">int</span> <span class="n">d</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="n">Point</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">y</span><span class="p">;</span>
+    <span class="n">Point</span><span class="p">(</span><span class="kt">int</span> <span class="n">x_</span><span class="p">,</span> <span class="kt">int</span> <span class="n">y_</span><span class="p">)</span><span class="o">:</span> <span class="n">x</span><span class="p">(</span><span class="n">x_</span><span class="p">),</span> <span class="n">y</span><span class="p">(</span><span class="n">y_</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">};</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Point</span><span class="o">&gt;</span> <span class="n">keypoints</span><span class="p">;</span>
+<span class="c1">// A temporary Point object is created and immediately passed to push_back.
+</span><span class="n">keypoints</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">));</span>
+</code></pre>
+</div>
+
+<p>In the second example, there is an obvious waste to construct a temporary object,
+copy it into the vector and then destroy it, especially if the object is so
+big that copying is a time-consuming operation, such as a vector containing lots
+of elements. If we know that the argument passed to the function is a temporary
+object, which will be soon released anyway, we may steal the resource from it
+to save a needless copy. It is natural to think further that we should implement
+two versions of the function, one receiving an ordinary reference and copying
+from it, the other receiving a temporary object and stealing from it. That’s the
+reason why rvalue references are added to C++11.</p>
+
+<h1 id="move-constructor-and-move-assignment">Move constructor and move assignment</h1>
+
+<p>The syntax of declaring a lvalue reference is appending an ampersand (&amp;) to the
+type, such as int&amp; and string&amp;. Similarly, to declare a rvalue reference, you
+need to append two ampersands (&amp;&amp;) like int&amp;&amp; and string&amp;&amp;.</p>
+
+<p>Provided rvalue references, there will be two ways to construct a new object
+from another existing one, copying or stealing the resources from it depending
+on if the existing one is a temporary object. The former is the well-known copy
+constructor, and the latter is called move constructor.</p>
+
+<p>Equally, there is a move assignment operator corresponding with a copy
+assignment operator.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">A</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="c1">// Allocating a new memory and copying the contents of data_.
+</span>    <span class="n">A</span><span class="p">(</span><span class="k">const</span> <span class="n">A</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="c1">// Stealing data_ directly from the other.
+</span>    <span class="n">A</span><span class="p">(</span><span class="n">A</span><span class="o">&amp;&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">data_</span> <span class="o">=</span> <span class="n">other</span><span class="p">.</span><span class="n">data_</span><span class="p">;</span>
+        <span class="n">len_</span> <span class="o">=</span> <span class="n">other</span><span class="p">.</span><span class="n">len_</span><span class="p">;</span>
+        <span class="c1">// Because we have stolen data_ from the other object, we have to reset
+</span>        <span class="c1">// the pointer so that it knows data_ is gone.
+</span>        <span class="c1">// Otherwise, other will free this memory during destruction.
+</span>        <span class="n">other</span><span class="p">.</span><span class="n">data_</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">;</span>
+        <span class="n">other</span><span class="p">.</span><span class="n">len_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// Copying from other, usually with copy-and-swap idiom.
+</span>    <span class="n">A</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">A</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="c1">// Usually swapping with other.
+</span>    <span class="n">A</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">&amp;&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">;</span>
+        <span class="n">swap</span><span class="p">(</span><span class="n">data_</span><span class="p">,</span> <span class="n">other</span><span class="p">.</span><span class="n">data_</span><span class="p">);</span>
+        <span class="n">swap</span><span class="p">(</span><span class="n">len_</span><span class="p">,</span> <span class="n">other</span><span class="p">.</span><span class="n">len_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// Deallocate memory.
+</span>    <span class="o">~</span><span class="n">A</span><span class="p">()</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+<span class="k">private</span><span class="o">:</span>
+    <span class="kt">char</span><span class="o">*</span> <span class="n">data_</span><span class="p">;</span>
+    <span class="kt">size_t</span> <span class="n">len_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>Implementing a correct copy or move assignment operator is a little tricker than
+copy or move constructor, for you have to release the resource the objects owns
+first, bringing about same resource release code written in copy/move
+assignment and destructor for as much as three times, which is inelegant and
+fallible. The usual way to write a good copy/move assignment is:</p>
+
+<ol>
+  <li>to implement copy assignment in copy-and-swap idiom;</li>
+  <li>to implement move assignment by swapping with the other object.</li>
+</ol>
+
+<p>In the way above, the responsibility of properly releasing resources is solely
+left to the destructor, reducing the chances to make mistakes. For more
+information about copy-and-swap and the right way to swap objects, see
+<a href="/2016/10/16/copy-and-swap.html">Copy and Swap</a>.</p>
+
+<h1 id="overloading-functions-on-lvalue-reference-and-rvalue-reference">Overloading functions on lvalue reference and rvalue reference</h1>
+
+<p>The same approach is applied to overload a function by distinguishing whether
+the argument is a lvalue or rvalue reference, like the following declarations.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Car</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="c1">// The lvalue reference version, chosen in most cases, including when the
+</span>    <span class="c1">// rvalue reference version does not exist.
+</span>    <span class="kt">void</span> <span class="n">set_wheel</span><span class="p">(</span><span class="k">const</span> <span class="n">Wheel</span><span class="o">&amp;</span> <span class="n">wheel</span><span class="p">);</span>
+    <span class="c1">// The rvalue reference version, chosen if the argument is a temporary
+</span>    <span class="c1">// object. You may implement it by moving the resource from wheel instead of
+</span>    <span class="c1">// copying.
+</span>    <span class="kt">void</span> <span class="n">set_wheel</span><span class="p">(</span><span class="n">Wheel</span><span class="o">&amp;&amp;</span> <span class="n">wheel</span><span class="p">);</span>
+<span class="k">private</span><span class="o">:</span>
+    <span class="n">Wheel</span> <span class="n">wheel_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>Here is a possible implementation.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Car</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="kt">void</span> <span class="n">set_wheel</span><span class="p">(</span><span class="k">const</span> <span class="n">Wheel</span><span class="o">&amp;</span> <span class="n">wheel</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Call the copy assignment of Wheel.
+</span>        <span class="n">wheel_</span> <span class="o">=</span> <span class="n">wheel</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">set_wheel</span><span class="p">(</span><span class="n">Wheel</span><span class="o">&amp;&amp;</span> <span class="n">wheel</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// WRONG! Still call the copy assignment!
+</span>        <span class="c1">// wheel_ = wheel;
+</span>        <span class="c1">// Correct. Call the move assignment.
+</span>        <span class="n">wheel_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">wheel</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="k">private</span><span class="o">:</span>
+    <span class="n">Wheel</span> <span class="n">wheel_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>The issue is, though a rvalue reference is bound to a rvalue (here, the
+temporary object is a rvalue), <strong>the expression to use a rvalue reference
+variable is a lvalue</strong>, causing the compiler to select the copy assignment
+operator. The most straightforward way to understand it is to realize that once
+you bind a temporary object to a rvalue reference variable, you can access it as
+many times as you want, modifying it, passing it to another function,
+constructing new objects from it, just like accessing an ordinary lvalue
+reference. Therefore, the expression <code class="highlighter-rouge">wheel</code> itself is a lvalue expression.</p>
+
+<p>To fix the problem, you need to call std::move on the reference, and cast it
+back into a rvalue. The rule is simple here: <strong>the expression calling a function
+that returns a rvalue reference is a rvalue.</strong></p>
+
+<p>The same mistake can be made when defining a move constructor:</p>
+
+<pre><code class="language-c+++">class Car {
+public:
+    Car(Wheel&amp;&amp; wheel): 
+        // WRONG! Call the copy constructor here.
+        // wheel_(wheel)
+        // Correct. Call the move constructor.
+        wheel_(std::move(wheel)) {}
+    // ...
+};
+</code></pre>
+
+<p>We can summarize the reference bounding rule as:</p>
+
+<ol>
+  <li>a lvalue reference is bound to a lvalue;</li>
+  <li>a rvalue reference is bound to a rvalue;</li>
+  <li>a lvalue reference-to-const (like const int&amp;) can be bound to a rvalue.</li>
+</ol>
+
+<h1 id="whether-an-expression-is-a-lvalue-or-rvalue">Whether an expression is a lvalue or rvalue?</h1>
+
+<p>To figure out whether an expression is a lvalue or rvalue, reading the very
+detailed <a href="http://en.cppreference.com/w/cpp/language/value_category">Value categories</a> is helpful. To quickly make sense of it, you
+can simply see the following examples at first.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="cm">/* --------------- lvalues ------------------------- */</span>
+<span class="c1">// the name of a variable or function
+</span><span class="n">std</span><span class="o">::</span><span class="n">cin</span>
+<span class="n">wheel</span>     <span class="c1">// wheel is a rvalue reference variable, such as Wheel&amp;&amp; wheel
+// string literals
+</span><span class="s">"don't panic"</span>
+<span class="c1">// a call to a function that returns lvalue references.
+</span><span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"String"</span>  <span class="c1">// equals to operator&lt;&lt;(std::cout, "String")
+// assignment, compound assignment, pre-increment/decrement
+</span><span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">b</span> <span class="o">*=</span> <span class="mi">3</span>
+<span class="o">++</span><span class="n">a</span>
+<span class="c1">// dereference, data member accessing, and array element accessing
+</span><span class="o">*</span><span class="n">pint</span>
+<span class="n">user</span><span class="p">.</span><span class="n">name</span>
+<span class="n">puser</span><span class="o">-&gt;</span><span class="n">name</span>
+<span class="n">numbers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="c1">// static cast to lvalue
+</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="cm">/* --------------- rvalues ------------------------- */</span>
+<span class="c1">// literals, except string
+</span><span class="mi">42</span>
+<span class="mf">1.8</span>
+<span class="c1">// a call to a function that returns non-references
+</span><span class="n">get_name</span><span class="p">()</span>  <span class="c1">// std::string get_name()
+// result of arithmetic, comparison and logic operators
+</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+<span class="n">age</span> <span class="o">&gt;</span> <span class="mi">17</span>
+<span class="n">x</span> <span class="o">&amp;&amp;</span> <span class="n">y</span>
+<span class="c1">// address-of
+</span><span class="o">&amp;</span><span class="n">c</span>
+<span class="c1">// static cast to non-reference
+</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="c1">// this pointer
+</span><span class="k">this</span>
+<span class="c1">// a call to a function that returns rvalue references
+</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+<span class="c1">// array element or member accessing when the array or object
+// is a rvalue
+</span><span class="n">make_array</span><span class="p">()[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">User</span><span class="p">().</span><span class="n">name</span>
+<span class="c1">// static cast to rvalue reference
+</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>Note that this pointer itself is rvalue, which means you cannot assign it to a
+new value (and it is meaningless to do so), while dereferencing it is a lvalue,
+according to the rule, like <code class="highlighter-rouge">*this</code>.</p>
+
+
+  </div>
+
+  
+    
+
+  
+</article>
+
+
+
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">tding.in <small><a href="/feed.xml">via RSS</a></small></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+          
+            Thomas Ding
+          
+          </li>
+          
+          <li><a href="mailto:thomasbyding@gmail.com">thomasbyding@gmail.com</a></li>
+          
+          
+          <li>
+            <a href="https://github.com/thomasding"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">thomasding</span></a>
+
+          </li>
+          
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <p>Covering instruction-level optimization, C++ features, best practices and so many other interesting topics.
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

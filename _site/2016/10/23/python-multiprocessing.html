@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Python Multiprocessing</title>
+  <meta name="description" content="Multiprocessing is an approach to improve performance by utilizing many CPUs in Python. A C++ programmer is usually more familiar with multithreading, which ...">
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://tding.in/2016/10/23/python-multiprocessing.html">
+  <link rel="alternate" type="application/rss+xml" title="tding.in" href="/feed.xml">
+  
+  
+</head>
+
+
+  <body>
+
+    <header class="site-header" role="banner">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">tding.in</a>
+
+    <nav class="site-nav">
+      <span class="menu-icon">
+        <svg viewBox="0 0 18 15" width="18px" height="15px">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </span>
+
+      <div class="trigger">
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/archive/">Archive</a>
+          
+        
+          
+          <a class="page-link" href="/tags/">Tags</a>
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Python Multiprocessing</h1>
+    <div class="post-meta">
+      <time datetime="2016-10-23T00:00:00+08:00" itemprop="datePublished">Oct 23, 2016</time>
+      <ul class="post-tags post-meta">
+        
+        <li>
+          <a href="/tags/#python" class="post-tag">python</a>
+        </li>
+        
+        <li>
+          <a href="/tags/#concurrency" class="post-tag">concurrency</a>
+        </li>
+        
+      </ul>
+    </div>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Multiprocessing is an approach to improve performance by utilizing many CPUs in
+Python. A C++ programmer is usually more familiar with multithreading, which
+creates many worker threads to do the tasks in parallel. However, due to the
+existence of GIL in Python, only one thread can run Python code at a time, when
+other threads must wait for it to release the GIL, such as waiting for I/O
+operations or mutexes. To achieve real parallelism, it is required to create
+many processes rather than many threads. Thankfully, python package
+<strong>multiprocessing</strong> provides easy-to-use API to create many processes and
+communicate between them. Furthermore, the API of <strong>multiprocessing</strong> is similar
+to <strong>multithreading</strong>, so that the same technique can be applied to
+multithreading scripts as well.</p>
+
+<!--more-->
+
+<h2 id="creating-worker-processes">Creating worker processes</h2>
+
+<p>Creating a worker process is as simple as creating a <strong>Process</strong> object and
+calling the <strong>start</strong> method.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+<span class="k">def</span> <span class="nf">worker</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">workerproc</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">worker</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">workerproc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">workerproc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>     <span class="c"># Wait for it to complete.</span>
+</code></pre>
+</div>
+
+<h2 id="doing-tasks-in-parallel-gracefully">Doing tasks in parallel gracefully</h2>
+
+<p>Though you can manually create processes, it is rare that you need such
+low-level API. A more common scenario is doing a list of mutual independent
+tasks in parallel and collecting the results. For example, provided with a list
+of file names, you want to load each file and count the characters in it. In
+that case, <strong>multiprocessing.Pool</strong> is what you need, which manages a fixed
+number of workers, automatically assigns tasks to them and collects the results.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="k">def</span> <span class="nf">count_chars</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">fin</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="n">filelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">'file1'</span><span class="p">,</span> <span class="s">'file2'</span><span class="p">,</span> <span class="s">'file3'</span><span class="p">,</span> <span class="s">'file4'</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="nb">map</span><span class="p">(</span><span class="n">count_chars</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>In constrast to <strong>Pool.map</strong>, <strong>Pool</strong> also provides an async version named
+<strong>map_async</strong>. In addition to the function and iterable object, <strong>map_async</strong>
+accepts an optional argument <strong>callback</strong>, a function receiving the result
+object that will be called when the operation is done successfully, and another
+optional argument <strong>error_callback</strong>, similar to <strong>callback</strong> but will be called
+on failure with the exception object instead.</p>
+
+<p>The method <strong>map_async</strong> returns an <strong>AsyncResult</strong> object, which provides
+methods to get the result in a blocking manner, that is, blocking the current
+thread until the result is available.</p>
+
+<p>Here is an example using <strong>Pool.map_async</strong>.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+
+<span class="k">def</span> <span class="nf">count_chars</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">fin</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="n">filelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">'file1'</span><span class="p">,</span> <span class="s">'file2'</span><span class="p">,</span> <span class="s">'file3'</span><span class="p">,</span> <span class="s">'file4'</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">async_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map_async</span><span class="p">(</span><span class="n">count_chars</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+        <span class="c"># Do something else while the workers are counting the characters...</span>
+        <span class="c"># Get the result (may block the current thread).</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">async_result</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+</code></pre>
+</div>
+
+<p>Or you may prefer the callback version:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+
+<span class="k">def</span> <span class="nf">count_chars</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">fin</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="k">def</span> <span class="nf">success_callback</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'Get result'</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">error_callback</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'Throw exception'</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+<span class="n">filelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">'file1'</span><span class="p">,</span> <span class="s">'file2'</span><span class="p">,</span> <span class="s">'file3'</span><span class="p">,</span> <span class="s">'file4'</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">async_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map_sync</span><span class="p">(</span><span class="n">count_chars</span><span class="p">,</span> <span class="n">filelist</span><span class="p">,</span> 
+                                     <span class="n">callback</span><span class="o">=</span><span class="n">success_callback</span><span class="p">,</span>
+                                     <span class="n">error_callback</span><span class="o">=</span><span class="n">error_callback</span><span class="p">)</span>
+        <span class="c"># Wait for the task to complete.</span>
+        <span class="n">async_result</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>For curious readers who wants to known where the callback is called, here is the
+answer: the <strong>Pool</strong> object internally manages many background threads, one of
+which is a result fetching thread that waits for the results from the worker
+processes. The callback is called in that result fetching thread in the main
+process.</p>
+
+<p>In all the examples above, we uses the with-statement to manage a <strong>Pool</strong>
+object. It is equivalent to the following implementation:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># The with-statement body...</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="c"># Execute the finally-clause whether an exception is raised or not.</span>
+    <span class="c"># Terminate all the worker processes violently by sending signal SIGTERM.</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>Hence, all the async tasks must be guaranteed to be done before exiting the
+with-statement. Otherwise, the worker processes will be terminated, leaving the
+tasks undone. One way to ensure that all the tasks are done is to close the pool
+before joining the worker processes, like the following code.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+    <span class="c"># Assign tasks to pool...</span>
+    <span class="c"># Close the pool, which means we won't assign new tasks.</span>
+    <span class="c"># Must be called before joining.</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="c"># Wait for the worker processes to complete the tasks that have been</span>
+    <span class="c"># assigned.</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>Nevertheless, the with-statement style is encouraged, because it ensures that no
+processes will be left running whether or not an exception is raised in the
+body.</p>
+
+<p>Another common scenario is that you want some tasks to be done in parallel,
+while the order of the result is insignificant. Here, you should use
+<strong>Pool.apply_async</strong>, which assigns the task to a worker process and returns an
+<strong>AsyncResult</strong> object.</p>
+
+<p>Here is a simplified example demonstrating a spider program that fetches pages
+from the Internet.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+
+<span class="k">class</span> <span class="nc">Spider</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">'''Create a pool with 8 workers.'''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="s">'''Add a new task that downloads the URL and save as the given 
+        filename.'''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_do_download</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+        
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">'''Close the Spider object and wait for all the tasks to be 
+        done.'''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_do_download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="s">'''The method that downloads the URL.'''</span>
+        <span class="c"># Implementation omitted...</span>
+</code></pre>
+</div>
+
+<h2 id="communication-is-expensive">Communication is expensive</h2>
+
+<p>In contrast to communication between threads, exchanging data between processes
+is much more expensive. In Python, the data is pickled in to binary format
+before transferring on pipes. Hence, the overhead of communication can be very
+significant when the task is small. To reduce the extraneous cost, better assign
+tasks in chunk.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+
+<span class="k">def</span> <span class="nf">add2</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span>
+
+<span class="k">def</span> <span class="nf">add2_for_all</span><span class="p">(</span><span class="n">number_list</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pool</span><span class="o">.</span><span class="nb">map</span><span class="p">(</span><span class="n">add2</span><span class="p">,</span> <span class="n">number_list</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>If <strong>chunksize</strong> is given, the tasks are grouped into chunks before being
+assigned to worker processes. Thankfully, the operation of packing into chunks
+and unpacking into separate tasks are done internally in the <code class="highlighter-rouge">Pool</code> object, the
+worker function doesn’t need to receive chunks, that is, the chunk is
+transparent to the worker function. The default value for <strong>chunksize</strong> is 1.</p>
+
+<h2 id="be-careful-about-global-variables">Be careful about global variables</h2>
+
+<p>There are three ways to create subprocesses: <strong>spawn</strong>, <strong>fork</strong> and
+<strong>fork-server</strong>. Two of them are mostly used:</p>
+
+<ol>
+  <li><strong>spawn</strong>: starting a brand new python interpreter, loading the current
+module, passing the arguments in pickled format to the subprocess and calling
+the target function. It is the default and only way in Windows.</li>
+  <li><strong>fork</strong>: cloning a subprocess from the current one, and the calling the
+target function in the subprocess. It is the default way in Unix-like
+systems, like Linux.</li>
+</ol>
+
+<p>Because of the difference that spawn starts a new process from scratch while the
+forking clones from the parent, the value of variables can be different, even
+unpredictable, if the script is run both in Windows and UNIX. Take the following
+code as an example:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+
+<span class="n">msg</span> <span class="o">=</span> <span class="s">'Init'</span>
+
+<span class="k">def</span> <span class="nf">worker</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="s">'Main'</span>
+    <span class="n">proc</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">worker</span><span class="p">)</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>If the code is run in UNIX, the output will be “Main”, for the memory space of
+the subprocess is the same as the parent after forking. However, in Windows, the
+output will be “Init” instead, for the subprocess loads the module from scratch.</p>
+
+<p>In order that the behavior of subprocesses are the same in Windows and UNIX, be
+careful not to use these global variables. To be more exact, <strong>every variable
+that may by modified after module initialization should be explicitly passed to
+the function as an argument</strong>. The arguments are passed in pickled format in
+spawn mode, so it is required that <strong>all the arguments be picklable</strong>.</p>
+
+<p>Besides, since the module is loaded again in spawn mode, remember to protect the
+startup code in <code class="highlighter-rouge">if __name__ == '__main__'</code>:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+
+<span class="n">msg</span> <span class="o">=</span> <span class="s">'Init'</span>
+
+<span class="k">def</span> <span class="nf">worker</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    
+<span class="c"># DO NOT WRITE LIKE THIS. IT WON'T DO IN SPAWN MODE.</span>
+<span class="n">msg</span> <span class="o">=</span> <span class="s">'Main'</span>
+<span class="n">proc</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">worker</span><span class="p">)</span>
+<span class="n">proc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<h2 id="dont-mix-multiprocessing-with-multithreading">Don’t mix multiprocessing with multithreading</h2>
+
+<p>Although forking almost clones everything from the parent processing, when it
+comes to threads, only the caller thread is cloned in the child process. It
+may bring about deadlock if forking in multithreading programs.</p>
+
+<p>In multithreading programs, when the resources are accessed by many
+threads, they should be protected by concurrency mechanism, like a mutex (mutual
+exclusive lock, which ensures only one thread holds the lock at a time). If
+another thread holds the mutex while the process forks, the mutex will remain
+locked forever in the child process, and any attempt to acquire the mutex will
+cause deadlock. Therefore, the most simple rule is <strong>never mixing
+multiprocessing with multithreading</strong>.</p>
+
+<p>Nevertheless, it is allowed to fork in a multithreading program, but it is
+tricky to write a correct one.</p>
+
+<h2 id="more-on-gil">More on GIL</h2>
+
+<p>GIL only exists in CPython, which is the default python interpreter in Linux and
+Windows. Although GIL hinders the performance of multithreading, it is the
+result of compromise. Back to the age of CPython 1.5, the attempt was once made
+to replace GIL with more smaller locks, which, unfortunately, causes about 40%
+performance penalty to single-threaded programs. Hence, it is acceptable to
+maintain high performance for single-threaded programs by simplifying the
+interpreter with GIL. As a result, multithreading is mostly used for
+I/O-intensive applications rather than computation-intensive.</p>
+
+<p>Other implementations like Jython (based on JVM) and IronPython (based on .NET)
+have no GIL, and in consequence, don’t suffer from GIL penalty on multithreading.</p>
+
+  </div>
+
+  
+    
+
+  
+</article>
+
+
+
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">tding.in <small><a href="/feed.xml">via RSS</a></small></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+          
+            Thomas Ding
+          
+          </li>
+          
+          <li><a href="mailto:thomasbyding@gmail.com">thomasbyding@gmail.com</a></li>
+          
+          
+          <li>
+            <a href="https://github.com/thomasding"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">thomasding</span></a>
+
+          </li>
+          
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <p>Covering instruction-level optimization, C++ features, best practices and so many other interesting topics.
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>SFINAE: Conditionally Instantiating Function Templates</title>
+  <meta name="description" content="When we want to provide different implementations of a function according to the type of the arguments, function overloading is the most usual way. When more...">
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://tding.in/2016/12/04/sfinae-conditionally-instantiating-function-templates.html">
+  <link rel="alternate" type="application/rss+xml" title="tding.in" href="/feed.xml">
+  
+  
+</head>
+
+
+  <body>
+
+    <header class="site-header" role="banner">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">tding.in</a>
+
+    <nav class="site-nav">
+      <span class="menu-icon">
+        <svg viewBox="0 0 18 15" width="18px" height="15px">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </span>
+
+      <div class="trigger">
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/archive/">Archive</a>
+          
+        
+          
+          <a class="page-link" href="/tags/">Tags</a>
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">SFINAE: Conditionally Instantiating Function Templates</h1>
+    <div class="post-meta">
+      <time datetime="2016-12-04T00:00:00+08:00" itemprop="datePublished">Dec 4, 2016</time>
+      <ul class="post-tags post-meta">
+        
+        <li>
+          <a href="/tags/#c++" class="post-tag">c++</a>
+        </li>
+        
+        <li>
+          <a href="/tags/#metaprogramming" class="post-tag">metaprogramming</a>
+        </li>
+        
+      </ul>
+    </div>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>When we want to provide different implementations of a function according to the
+type of the arguments, function overloading is the most usual way. When more
+than one implementations match the types of the given arguments, the compiler
+will choose the one that matches the most specifically. For example, the
+function that accepts a pointer to the derived class is more specific than one
+that accepts a pointer to the base class. One that accept the exact type is more
+specific than one that needs implicit type conversion. Furthermore, in C++11, a
+function can even overload on whether the argument is a lvalue reference or a
+rvalue reference.</p>
+
+<p>However, function overloading cannot handle all the cases. For example, when
+defining a function template, it is impossible to enumerate all the types of the
+arguments, so function overloading cannot be used. On the other hand, though
+partial specialization can provide different implementations according to the
+category of the given type, it can only be used in very limited situations where
+the difference lies in whether or not the given type is a pointer, reference,
+array or const/volatile-qualified.</p>
+
+<p>Hence, we need more powerful mechanism to provide diverse implementations based
+on the types of the arguments. That mechanism is <strong>SFINAE</strong>.</p>
+
+<!--more-->
+
+<h2 id="what-is-sfinae">What is SFINAE</h2>
+
+<p>Like many C++ terms, the full name of SFINAE is very confusing: <strong>Substitution
+Failure Is Not An Error</strong>. Briefly speaking, when substituting the template
+parameters occurring in template parameter declarations and the function type
+(which includes the return type and all the parameter types) during
+instantiation, if the substitution is not legal, the instantiated function is
+removed from the possible candidates instead of causing compile error.</p>
+
+<p>The first concept that we need to understand is <strong>substitution</strong>. When
+instantiating a function template, the compiler replaces all the occurrences of
+template parameters, such as the commonly-used <strong>T</strong>, with the actual types or
+values (if the parameter is a integer, for example). This procedure is called
+<strong>substitution</strong>. As we all know, not all substitutions generate legal codes.
+For example, the function template calls a member function of template parameter
+<strong>T</strong>. If the actual type of <strong>T</strong> doesn’t have such member function, the
+generated code will cause a compile error. Apart from illegal member function
+calls, there are still many ways to generate bad functions, such as declaring an
+array of negative size (the size is a template parameter), using a non-existing
+member type (a type declared in a class or struct with <strong>typedef</strong> or <strong>using</strong>
+statements), creating a pointer to member of non-class T (related to pointer to
+member), creating a reference to void and any other situations that cause
+syntax errors.</p>
+
+<p>However, if such syntax error introduced by substitution happens in <strong>function
+argument declaration, return type and template parameter declaration</strong>, instead
+of resulting in a compile error, the substitution is simply discarded by the
+compiler. On the other hand, the syntax error occurring in the function body
+still causes compile error.</p>
+
+<p>Assume that we are writing a function template whose template parameter is
+<strong>T</strong>:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="k">class</span> <span class="nc">T</span><span class="o">::</span><span class="n">B</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre>
+</div>
+
+<p>If we call function foo with <strong>T</strong> being a type with member type <strong>B</strong>, the
+first is chosen, for it is more specific than the second. Otherwise, the second
+is chosen, like the following examples.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">struct</span> <span class="n">A</span> <span class="p">{</span> <span class="k">using</span> <span class="n">B</span> <span class="o">=</span> <span class="kt">float</span><span class="p">;</span> <span class="p">};</span>
+<span class="n">foo</span><span class="o">&lt;</span><span class="n">A</span><span class="o">&gt;</span><span class="p">(</span><span class="mf">1.2</span><span class="n">f</span><span class="p">);</span>       <span class="c1">// call the first
+</span><span class="n">foo</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mf">1.2</span><span class="n">f</span><span class="p">);</span>   <span class="c1">// call the second
+</span></code></pre>
+</div>
+
+<p>Assume that we want to provide two implementations based on whether the template
+parameter <strong>N</strong> is even or odd. There is a possible solution by declaring a
+not-used pointer to array, whose size can be illegal (array size 0 is illegal):</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="c1">// Chosen if N is even.
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">bar</span><span class="p">(</span><span class="kt">char</span><span class="p">(</span><span class="o">*</span><span class="p">)[</span><span class="n">N</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+<span class="c1">// Chosen if N is odd.
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">bar</span><span class="p">(</span><span class="kt">char</span><span class="p">(</span><span class="o">*</span><span class="p">)[</span><span class="n">N</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre>
+</div>
+
+<p>The argument type <code class="highlighter-rouge">char(*)[N % 2 == 0] = nullptr</code> is very confusing at first
+sight. Let’s see how it is composed:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="n">x</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>    <span class="c1">// an array of size 10 of type int
+</span><span class="kt">int</span><span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>   <span class="c1">// an array of size 10 of type int* (* is closer to the type
+</span>              <span class="c1">// before it)
+</span><span class="kt">int</span> <span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>   <span class="c1">// still an array of type int* (the spaces around * don't matter)
+</span><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)[</span><span class="mi">10</span><span class="p">];</span> <span class="c1">// a pointer to an array of size 10 of type int
+</span></code></pre>
+</div>
+
+<p>The last example is a little hard to understand. Because <strong>*</strong> is explicitly
+combined into <strong>x</strong>, let’s see the rest of the type at first, which is <code class="highlighter-rouge">int
+[10]</code>, an array of size 10 of type int. Then the <strong>*</strong> says that x is a pointer
+to the rest of the type, so a pointer to <code class="highlighter-rouge">int [10]</code>.</p>
+
+<p>Because the compiler allows default values to function arguments, we can define
+a function like this:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">bar</span><span class="p">(</span><span class="kt">char</span> <span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>  <span class="c1">// x is a pointer to char[10]
+</span></code></pre>
+</div>
+
+<p>In the last step, we omit the argument name, for we don’t use it in the function
+body, and replace the array size with a compile-time constant expression (which
+can be computed in compile time):</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">template</span> <span class="o">&lt;</span><span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">bar</span><span class="p">(</span><span class="kt">char</span><span class="p">(</span><span class="o">*</span><span class="p">)[</span><span class="n">N</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre>
+</div>
+
+<p>However, it must be careful to use <strong>array size SFINAE</strong>. For example, the
+following two function templates look plausible, while causing syntax error in
+practice:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="c1">// Chosen if N is even. 
+// The type of argument is an array of size (N % 2 == 0).
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">bar</span><span class="p">(</span><span class="kt">char</span><span class="p">[</span><span class="n">N</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+<span class="c1">// Chosen if N is odd. 
+// The type of the argument is an array of size (N % 2== 1).
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">bar</span><span class="p">(</span><span class="kt">char</span><span class="p">[</span><span class="n">N</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre>
+</div>
+
+<p>In the compiler’s eyes, the two function templates above look identical, hence
+it treats the second as a duplicate of the first, reporting a redefinition error.
+The reason why the compiler treats the two declarations as the same is a
+mechanism called <strong>array decaying</strong>, which is applied to function arguments.
+Practically, all the following declarations are the same:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="c1">// A group of identical functions (=&gt; means "be decayed into").
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">a</span><span class="p">);</span>      <span class="c1">// pointer to int
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">10</span><span class="p">]);</span>   <span class="c1">// int[10] =&gt; pointer to int
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">20</span><span class="p">]);</span>   <span class="c1">// int[20] =&gt; pointer to int
+</span>
+<span class="c1">// Another group of identical functions.
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">)[</span><span class="mi">10</span><span class="p">]);</span>  <span class="c1">// pointer to int[20]
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">20</span><span class="p">][</span><span class="mi">10</span><span class="p">]);</span> <span class="c1">// int[20][20] =&gt; pointer to int[20]
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">30</span><span class="p">][</span><span class="mi">10</span><span class="p">]);</span> <span class="c1">// int[30][20] =&gt; pointer to int[20]
+</span></code></pre>
+</div>
+
+<p>However, the following declarations are different:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">)[</span><span class="mi">10</span><span class="p">]);</span>  <span class="c1">// pointer to int[10]
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">10</span><span class="p">][</span><span class="mi">20</span><span class="p">]);</span> <span class="c1">// int[10][10] =&gt; pointer to int[20]
+</span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">10</span><span class="p">][</span><span class="mi">30</span><span class="p">]);</span> <span class="c1">// int[10][20] =&gt; pointer to int[30]
+</span>
+<span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="mi">10</span><span class="p">]);</span>     <span class="c1">// It's actually an array of int* of size 10.
+</span></code></pre>
+</div>
+
+<p>It can be summarized as <strong>the first dimension of an array is decayed into a
+pointer, while the other dimensions preserve</strong>.</p>
+
+<p>Therefore, to avoid array decaying, we have to carefully use SFINAE on the
+second dimension of the array type instead of the first, which will be
+eventually decayed into a pointer in spite of its size.</p>
+
+<h2 id="type-sfinae">Type SFINAE</h2>
+
+<p>All the SFINAE cases mentioned in the previous section occur on the validity of
+types, such as accessing non-existing member types and constructing invalid
+array types. These SFINAE cases based on types are called <strong>type SFINAE</strong>, which
+is supported by C++ before C++11.</p>
+
+<p>In type SFINAE, we construct a type dependent on template parameters on purpose,
+whose validity is determined by the actual value of the template parameters. It
+looks like a switch that can be turned on or off in order to determine whether
+or not to take the function as a possible candidate.</p>
+
+<p>Here is another of type SFINAE, which attempts to assign a value to a
+incompatible type as a function argument or template parameter.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="n">T</span> <span class="n">a</span><span class="p">,</span> <span class="n">T</span><span class="o">*</span> <span class="n">b</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> <span class="k">class</span> <span class="nc">B</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="n">T</span> <span class="n">a</span><span class="p">,</span> <span class="n">B</span> <span class="n">b</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="kt">void</span> <span class="n">foo_test</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+  <span class="n">foo</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">k</span><span class="p">);</span>    <span class="c1">// Call the first function =&gt; void foo&lt;int&gt;(int, int*)
+</span>  <span class="n">foo</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>    <span class="c1">// Call the second function =&gt; void foo&lt;int, int&gt;(int, int)
+</span><span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Interestingly, the common case of such SFINAE is usually made as a mistake by
+the programmer. In practice, when calling a function template with the arguments
+of incompatible types, instead of being reminded of the message like “cannot
+assign a (type X) to b (type Y)”, which is commonly seen in non-template
+function calls, we are actually warned that no suitable functions are found.
+That’s because the function template is removed by the compiler due to
+substitution failure, hence, the compiler cannot even find a function that we
+are intended to call. Eventually, the compiler can only report that no such
+functions exist.</p>
+
+<h2 id="expression-sfinae">Expression SFINAE</h2>
+
+<h3 id="introduction-to-delctype-specifier">Introduction to delctype specifier</h3>
+
+<p>Starting from C++11, a new keyword <strong>decltype</strong> is introduced. It represents the
+type of the expression or entity in the parentheses. An entity is a variable or
+member of an object. If the x part of <strong>decltype(x)</strong> is an entity, its
+represented type is the type of x itself. In any other cases, its represented
+type is the type of the expression, including <strong>decltype(expr)</strong> and
+<strong>decltype((x))</strong>.</p>
+
+<p>Here are some examples of <strong>decltype</strong> uses:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="k">decltype</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="n">y</span><span class="p">;</span>      <span class="c1">// x is an entity, the type of y is int
+</span><span class="k">decltype</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">)</span> <span class="n">px</span><span class="p">;</span>    <span class="c1">// &amp;x is an expression, the type of px is int*
+</span><span class="k">decltype</span><span class="p">((</span><span class="n">x</span><span class="p">))</span> <span class="n">lrx</span><span class="p">;</span>  <span class="c1">// (x) is an expression, the type of lrx is int&amp;
+</span><span class="k">decltype</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="n">rrx</span><span class="p">;</span>  <span class="c1">// the type of rrx is int&amp;&amp;
+</span>
+<span class="k">struct</span> <span class="n">A</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">m</span><span class="p">;</span> <span class="p">};</span>
+<span class="k">const</span> <span class="n">A</span> <span class="n">a</span><span class="p">;</span>
+<span class="k">decltype</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="n">b</span><span class="p">;</span>      <span class="c1">// a is an entity, the type of b is const A
+</span><span class="k">decltype</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">m</span><span class="p">)</span> <span class="n">n</span><span class="p">;</span>    <span class="c1">// a.m is an entity, the type of n is int
+</span><span class="k">decltype</span><span class="p">((</span><span class="n">a</span><span class="p">.</span><span class="n">m</span><span class="p">))</span> <span class="n">rm</span><span class="p">;</span> <span class="c1">// (a.m) is an expression, the type of rm is const int&amp;
+</span>
+<span class="k">decltype</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="n">z</span><span class="p">;</span>  <span class="c1">// 1 + 2 is an expression, the type of z is int
+</span>
+<span class="kt">int</span> <span class="n">foo</span><span class="p">();</span>
+<span class="k">decltype</span><span class="p">(</span><span class="n">foo</span><span class="p">())</span> <span class="n">fr</span><span class="p">;</span>    <span class="c1">// type of fr is int
+</span><span class="k">decltype</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">m</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="n">c</span><span class="p">;</span>   <span class="c1">// the type of a comma operator is that of the last
+</span>                       <span class="c1">// element, hence the type of c is int
+</span></code></pre>
+</div>
+
+<p>It is worth noticing that the expression in a <strong>decltype</strong> operator don’t
+generate real code. It is only used to deduce types in compile time and discarded
+afterwards.</p>
+
+<p>To comprehend <strong>decltype</strong> thoroughly, it is advised to refer to the standard
+<a href="http://en.cppreference.com/w/cpp/language/value_category">value category</a> and <a href="http://en.cppreference.com/w/cpp/language/decltype">decltype</a>. But here, a little understanding of
+<strong>decltype</strong> is enough for us to take a look at <strong>expression SFINAE</strong>.</p>
+
+<h3 id="expression-sfinae-based-on-ill-formed-decltype-expression">Expression SFINAE based on ill-formed decltype expression</h3>
+
+<p>Similar to type SFINAE, expression SFINAE occurs in ill-formed decltype
+expression in the function argument declaration, return type and template
+parameter declaration. One of the most common uses is to combine the delctype
+operator with comma operators in order to construct SFINAE on arbitrary
+expressions without affecting the prototype of the function.</p>
+
+<p>As we know from C, the expression <code class="highlighter-rouge">a, b</code> evaluates a and b sequentially and
+return the value of b as the value of the expression. Thus, the type of a comma
+expression <code class="highlighter-rouge">a, b</code> is always the type of b in spite of a. Hence, we can replace a
+with any expressions so as to make use of SFINAE.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="c1">// Two animal classes that provide different methods to speak.
+</span><span class="k">struct</span> <span class="n">Dog</span> <span class="p">{</span> <span class="kt">void</span> <span class="n">bark</span><span class="p">()</span> <span class="p">{}</span> <span class="p">};</span>
+<span class="k">struct</span> <span class="n">Cat</span> <span class="p">{</span> <span class="kt">void</span> <span class="n">mew</span><span class="p">()</span> <span class="p">{}</span> <span class="p">};</span>
+
+<span class="c1">// A pair of generalized speak templates.
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">auto</span> <span class="n">speak</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">animal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">decltype</span><span class="p">(</span><span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">(),</span> <span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">auto</span> <span class="n">speak</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">animal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">decltype</span><span class="p">(</span><span class="n">animal</span><span class="p">.</span><span class="n">mew</span><span class="p">(),</span> <span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="p">.</span><span class="n">mew</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>You may have noticed that we put the return type after the function argument
+list because it is too long to put beforehand. Because we have moved the return
+type after the argument list, we need to put <strong>auto</strong> specifier at the old place
+as a placeholder. As an example, the following to definitions are identical:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">foo</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">10</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">auto</span> <span class="n">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">int</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">10</span><span class="p">;</span> <span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In the previous example, <strong>decltype(animal.bark(), void)</strong> is always <strong>void</strong>,
+because of the comma operator. However, if <strong>animal</strong> does not have a method
+called <strong>bark</strong> that accepts no arguments, the expression will be ill-formed,
+hence triggering expression substitution failure.</p>
+
+<p>Therefore, if the class provides a <strong>bark()</strong> method, the first is called. If
+the class provides a <strong>mew()</strong> method, the second is called. Otherwise, neither
+is called, the function call being illegal.</p>
+
+<h2 id="stdvoidt">std::void_t</h2>
+
+<p>In C++17, a new type alias <strong>void_t&lt;T1, T2, …&gt;</strong> is introduced, which, as its
+name suggests, is always <strong>void</strong>. It is used as a utility of SFINAE. Hence we
+can rewrite the example like:</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">auto</span> <span class="n">speak</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">animal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">std</span><span class="o">::</span><span class="n">void_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">())</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">auto</span> <span class="n">speak</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">animal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">std</span><span class="o">::</span><span class="n">void_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">animal</span><span class="p">.</span><span class="n">mew</span><span class="p">())</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="p">.</span><span class="n">mew</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The code above is more self-explanatory than <code class="highlighter-rouge">decltype(A, void)</code>. Furthermore,
+we can even use it as a template parameter.</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="c1">// We omit the parameter name and use void_t as a default type.
+// Because the only role it plays here is the context of SFINAE.
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> 
+          <span class="k">typename</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">void_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">())</span><span class="o">&gt;</span> <span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">speak</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">animal</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="p">.</span><span class="n">bark</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>std::void_t</strong> can be possibly implemented by a helper struct in order to avoid
+the template parameters being ignored by the compiler (the compile can ignore
+unused template parameters in the using statement):</p>
+
+<div class="language-c++ highlighter-rouge"><pre class="highlight"><code><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Ts</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="n">void_s</span> <span class="p">{</span> <span class="k">using</span> <span class="n">type</span> <span class="o">=</span> <span class="kt">void</span><span class="p">;</span> <span class="p">};</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Ts</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">void_t</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">void_s</span><span class="o">&lt;</span><span class="n">Ts</span><span class="p">...</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
+</code></pre>
+</div>
+
+
+  </div>
+
+  
+    
+
+  
+</article>
+
+
+
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">tding.in <small><a href="/feed.xml">via RSS</a></small></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+          
+            Thomas Ding
+          
+          </li>
+          
+          <li><a href="mailto:thomasbyding@gmail.com">thomasbyding@gmail.com</a></li>
+          
+          
+          <li>
+            <a href="https://github.com/thomasding"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">thomasding</span></a>
+
+          </li>
+          
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <p>Covering instruction-level optimization, C++ features, best practices and so many other interesting topics.
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
