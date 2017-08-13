@@ -1,11 +1,10 @@
-title: tding.in
-author: Thomas Ding
+title: Tomatoast's Recipes
+author: Tomatoast
 email: thomasbyding@gmail.com
 description: >
-  Covering instruction-level optimization, C++ features, best practices and so
-  many other interesting topics.
+  Advanced programming topics and interesting reviews.
 baseurl: ""
-url: "http://tding.in"
+url: "https://tomatoast.pw"
 github_username:  thomasding
 
 excerpt_separator: <!--more-->
@@ -16,6 +15,3 @@ gems:
 exclude:
   - Gemfile
   - Gemfile.lock
-
-disqus:
-  shortname: tding
