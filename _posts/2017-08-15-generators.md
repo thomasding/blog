@@ -13,7 +13,7 @@ It is generally used to construct a finite/infinite list lazily.
 We can write a generator to make an infinite list of natural numbers
 starting from a given integer.
 
-<!-- more -->
+<!--more-->
 
 ```python
 def natural_list(n):
