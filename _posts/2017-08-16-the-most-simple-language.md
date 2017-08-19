@@ -125,4 +125,6 @@ Lambda calculus 上的运算就是不断地对 term 做 beta reduction 直到不
 因为我们的目的并不是在数学上证明编程语言的性质。
 因此，在接下来的文章里，我们对数学部分始终保持浅尝辄止的态度，也不得不因此牺牲定义的严谨性。
 
+<hr class="startline">
+
 {% include plt.html %}

@@ -149,4 +149,6 @@ fix = λf. (λx. f (λy. x x y)) (λx. f (λy. x x y))
 
 [1]: {% post_url 2017-08-16-the-most-simple-language %}
 
+<hr class="startline">
+
 {% include plt.html %}
