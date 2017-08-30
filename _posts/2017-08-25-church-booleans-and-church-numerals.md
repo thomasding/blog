@@ -231,7 +231,3 @@ Church boolean 和 Church numeral 从数学上证明了：
 </blockquote>
 
 [1]: {% post_url 2017-08-16-the-most-simple-language %}
-
-<hr class="startline">
-
-{% include plt.html %}

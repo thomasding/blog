@@ -121,10 +121,3 @@ if ((λa.λb. a * b) 2 3) > 0 then 1 else 2
 一个形如 `(λx.t1) t2` 的 term 被称作 **reducible expression** ，简称 **redex** 。
 
 Lambda calculus 上的运算就是不断地对 term 做 beta reduction 直到不可以做任何 beta reduction 为止。
-
-因为我们的目的并不是在数学上证明编程语言的性质。
-因此，在接下来的文章里，我们对数学部分始终保持浅尝辄止的态度，也不得不因此牺牲定义的严谨性。
-
-<hr class="startline">
-
-{% include plt.html %}
