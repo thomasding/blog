@@ -164,6 +164,10 @@
  */
 .page-content {
   padding: $spacing-unit 0;
+
+  @include media-query($on-laptop) {
+      padding: 0;
+  }
 }
 
 .page-heading {
@@ -193,9 +197,8 @@
 .post-inline-meta {
   @extend .post-meta;
   display: inline-block;
-  min-width: 4em;
+  min-width: 6em;
   margin-right: 1em;
-  float: right;
 }
 
 .post-link {

@@ -168,8 +168,7 @@ pre {
     box-shadow: none;
     max-width: -webkit-calc(#{$content-width} - (#{$spacing-unit}));
     max-width:         calc(#{$content-width} - (#{$spacing-unit}));
-    padding-right: $spacing-unit / 2;
-    padding-left: $spacing-unit / 2;
+    padding: $spacing-unit / 2;
   }
 }
 

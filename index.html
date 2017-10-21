@@ -29,8 +29,8 @@ layout: default
   <ul class="post-compact-list">
     {% for post in site.posts %}
       <li>
-        <span><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
         <span class="post-inline-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+        <span><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
       </li>
     {% endfor %}
   </ul>
