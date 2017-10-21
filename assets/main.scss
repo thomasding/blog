@@ -4,7 +4,7 @@
 @charset "utf-8";
 
 // Our variables
-$base-font-family: "PT Serif", "Helvetica Neue", Helvetica, Arial, "微软雅黑", "宋体", sans-serif;
+$base-font-family: Georgia, "Times New Roman", Times, "微软雅黑", "宋体", serif;
 $base-font-size:   18px;
 $base-font-weight: 400;
 $small-font-size:  $base-font-size * 0.875;
@@ -13,7 +13,8 @@ $base-line-height: 1.8;
 $spacing-unit:     40px;
 
 $text-color:       #111;
-$background-color: #fdfdfd;
+$page-color:       rgb(251, 251, 251);
+$background-color: rgb(230, 230, 230);
 $brand-color:      #2a7ae2;
 
 $grey-color:       #828282;

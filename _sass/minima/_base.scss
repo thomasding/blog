@@ -158,11 +158,14 @@ pre {
   max-width:         calc(#{$content-width} - (#{$spacing-unit} * 2));
   margin-right: auto;
   margin-left: auto;
-  padding-right: $spacing-unit;
-  padding-left: $spacing-unit;
+  padding: $spacing-unit;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+  background-color: $page-color;
+
   @extend %clearfix;
 
   @include media-query($on-laptop) {
+    box-shadow: none;
     max-width: -webkit-calc(#{$content-width} - (#{$spacing-unit}));
     max-width:         calc(#{$content-width} - (#{$spacing-unit}));
     padding-right: $spacing-unit / 2;
@@ -192,6 +195,15 @@ pre {
 
   path {
     fill: $grey-color;
+  }
+}
+
+.home-link {
+  margin-top: -$spacing-unit/2;
+  margin-bottom: $spacing-unit/2;
+
+  a {
+    color: $grey-color;
   }
 }
 
