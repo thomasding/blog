@@ -30,7 +30,7 @@ layout: default
     {% for post in site.posts %}
       <li>
         <span class="post-inline-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
-        <span><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
+        <span class="post-inline-title"><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
       </li>
     {% endfor %}
   </ul>

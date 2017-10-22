@@ -199,6 +199,16 @@
   display: inline-block;
   min-width: 6em;
   margin-right: 1em;
+
+  @include media-query($on-palm) {
+    display: block;
+  }
+}
+
+.post-inline-title {
+  @include media-query($on-palm) {
+    display: block;
+  }
 }
 
 .post-link {
