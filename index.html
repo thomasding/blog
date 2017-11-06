@@ -1,38 +1,30 @@
 ---
 layout: default
+title: Home
 ---
 
-<div class="home">
+<div class="catalogue">
+  {% for post in paginator.posts %}
+    <div class="catalogue-item">
+      <a href="{{ post.url | prepend: site.baseurl }}">
+        <time datetime="{{ post.date }}" class="catalogue-time">{{ post.date | date: "%B %d, %Y" }}</time>
+        <h1 class="catalogue-title">{{ post.title }}</h1>
+        <div class="catalogue-line"></div>
+      </a>
+      <div>
+        {{ post.excerpt }}
+      </div>
+    </div>
+  {% endfor %}
+</div>
 
-  <h1>{{ site.title }}</h1>
+<div class="pagination">
+  {% if paginator.previous_page %}
+    <a href="{{ paginator.previous_page_path | prepend: site.baseurl }}" class="left arrow">&#8592;</a>
+  {% endif %}
+  {% if paginator.next_page %}
+    <a href="{{ paginator.next_page_path | prepend: site.baseurl }}" class="right arrow">&#8594;</a>
+  {% endif %}
 
-  <div class="contact-list">
-    <ul>
-      {% if site.email %}
-      <li>
-        <a href="mailto:{{ site.email }}">{{ site.email }}</a>
-      </li>
-      {% endif %}
-      {% if site.github_username %}
-      <li>
-        {% include icon-github.html username=site.github_username %}
-      </li>
-      {% endif %}
-      {% if site.twitter_username %}
-      <li>
-        {% include icon-twitter.html username=site.twitter_username %}
-      </li>
-      {% endif %}
-    </ul>
-  </div>
-
-  <ul class="post-compact-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-inline-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
-        <span class="post-inline-title"><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
-      </li>
-    {% endfor %}
-  </ul>
-
+  <span>{{ paginator.page }}</span>
 </div>
