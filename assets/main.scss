@@ -1,40 +1,13 @@
 ---
-# Only the main Sass file needs front matter (the dashes are enough)
+# Use a comment to ensure Jekyll reads the file to be transformed into CSS later
+# only main files contain this front matter, not partials.
 ---
-@charset "utf-8";
 
-// Our variables
-$base-font-family: Georgia, "Times New Roman", Times, "微软雅黑", "宋体", serif;
-$base-font-size:   18px;
-$base-font-weight: 400;
-$small-font-size:  $base-font-size * 0.875;
-$base-line-height: 1.8;
-
-$spacing-unit:     40px;
-
-$text-color:       #111;
-$page-color:       rgb(251, 251, 251);
-$background-color: rgb(230, 230, 230);
-$brand-color:      #2a7ae2;
-
-$grey-color:       #828282;
-$grey-color-light: lighten($grey-color, 40%);
-$grey-color-dark:  darken($grey-color, 25%);
-
-// Width of the content area
-$content-width:    800px;
-
-$on-palm:          600px;
-$on-laptop:        800px;
-
-// Minima also includes a mixin for defining media queries.
-// Use media queries like this:
-// @include media-query($on-palm) {
-//     .wrapper {
-//         padding-right: $spacing-unit / 2;
-//         padding-left: $spacing-unit / 2;
-//     }
-// }
-
-// Import partials from the `minima` theme.
-@import "minima";
+@import 'variables';
+@import 'base';
+@import 'code';
+@import 'post';
+@import 'syntax';
+@import 'layout';
+@import 'pagination';
+@import 'catalogue';

@@ -6,15 +6,14 @@ description: >
 baseurl: ""
 url: "https://tomatoast.pw"
 github_username:  thomasding
+paginate: 10
 
 excerpt_separator: <!--more-->
 
 markdown: kramdown
 gems:
   - jekyll-feed
+  - jekyll-paginate
 exclude:
   - Gemfile
   - Gemfile.lock
-
-isso:
-  url: //tomatoast.pw/isso
