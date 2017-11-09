@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 写出通用代码的方法：模版
+title: 用模版写出通用代码
 tags: [c++]
 comments: false
 ---
