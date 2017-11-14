@@ -14,7 +14,6 @@
 [ ] Property in python
 [X] SFINAE
 [ ] CRTP for cloning and static polymorphism
-[ ] vector resize implementation
 [ ] implementation of shared_ptr (w or w/o weak_ptr)
 [ ] implementation of any
 [ ] use <algorithm>, decomposing loop into iterator operation and action
@@ -23,3 +22,10 @@
 [ ] template metaprogramming over LISP
 [ ] std::any implementation without RTTI
 [ ] metaprogramming with map and reduce
+
+[ ] 迭代器 <algorithm>
+[ ] CTRP Mixin
+[ ] SFINAE
+[ ] Visitor Pattern
+
+[ ] auto decltype(auto)
