@@ -6,6 +6,7 @@ comments: false
 ---
 
 当多个类有一些共有的功能时，我们可以将共同的功能设计成 **mixin** ，以便复用代码。
+
 在和类相关的各种设计方法中， **interface** 侧重于定义外界与类交互的方式；
 **inheritance** 侧重于表达类之间的一般与特殊的关系；
 而 **mixin** 则侧重于同时提供新的接口和实现，即扩展基础类的功能。
@@ -22,7 +23,7 @@ comments: false
 
 如果使用 mixin 的方式，我们可以设计一个叫做 **Undo** 的 mixin ，让它支持撤销功能。
 
-在实现 **Undo** 之间，我们假设所有可以撤销状态的类都具有一个 **set** 函数用于修改状态，一个 **get** 
+在实现 **Undo** 之前，我们假设所有可以撤销状态的类都具有一个 **set** 函数用于修改状态，一个 **get** 
 函数用于获得当前状态。
 
 ```cpp
@@ -177,11 +178,9 @@ class Square : public Shape {
 };
 ```
 
-这样，如果我们使用 Rectangle 的指针，就可以得到一个新的 Rectangle 类型的对象，而不是 Shape 类型。
+这样，如果我们使用 Rectangle 的指针，就可以得到一个新的 Rectangle 类型的对象，而不是 Shape 类型。那么，如何使用 CRTP 实现一个支持这样的 clone 功能的 mixin 呢？
 
-那么，如何使用 CRTP 实现一个支持这样的 clone 功能的 mixin 呢？
-
-提示：下面的直观实现是错误的。
+正确的实现会在新的文章中讨论，但是，可以提示下面的直观实现是错误的。
 
 ```cpp
 class Shape {
@@ -201,6 +200,4 @@ class Rectangle: public Clone<Shape, Rectangle> {};
 class Square: public Clone<Shape, Square> {};
 ```
 
-这个实现错误的原因是，编译器在梳理 Rectangle 的继承关系之前，先要梳理 Clone<Shape, Rectangle> 的继承关系。
-而在实例化 Clone<Shape, Rectangle> 时，遇到 Rectangle* 转换为 Shape* 的需要，而这个时候，
-我们还不知道 Shape* 是 Rectangle* 的父类。因此，这段代码是无法编译通过的。
+在实际编译时，编译器会抱怨返回 Rectangle* 的虚函数不可以覆盖返回 Shape* 的虚函数。
