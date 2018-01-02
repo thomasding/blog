@@ -1,9 +1,9 @@
-{% capture imagePath %}{{ page.id }}/{{ include.name }}{% endcapture %}
+{% capture imagePath %}{{ page.id | remove:'#excerpt' }}/{{ include.name }}{% endcapture %}
 {% if include.caption %}
 <figure class="figure">
-    <img src="/assets/posts/{{ imagePath }}"  />
+    <img src="/assets/posts{{ imagePath }}"  />
     <figcaption>{{ include.caption }}</figcaption>
 </figure>
 {% else %}
-<img src="/assets/posts/{{ imagePath }}"  />
+<img src="/assets/posts{{ imagePath }}"  />
 {% endif %}

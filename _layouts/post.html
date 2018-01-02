@@ -7,6 +7,11 @@ layout: default
     {% if page.date %}
       <time datetime="{{ page.date }}">{{ page.date | date: "%B %d, %Y" }}</time>
     {% endif %}
+    {% if page.tags %}
+      {% for tag in page.tags %}
+        <a class="catalogue-tag" href="{{ site.baseurl }}/tags#{{ tag | slugify }}">{{ tag }}</a>
+      {% endfor %}
+    {% endif %}
   </div>
 
   <h1 class="post-title">{{ page.title }}</h1>
