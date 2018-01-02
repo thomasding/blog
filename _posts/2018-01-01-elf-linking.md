@@ -1,7 +1,7 @@
 ---
 layout: post
 title: 图解 Linux 程序的链接原理
-tags: [操作系统, C++]
+tags: [操作系统, c++]
 comments: true
 ---
 
