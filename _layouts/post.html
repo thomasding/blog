@@ -9,7 +9,7 @@ layout: default
     {% endif %}
     {% if page.tags %}
       {% for tag in page.tags %}
-        <a class="catalogue-tag" href="{{ site.baseurl }}/tags#{{ tag | slugify }}">{{ tag }}</a>
+        <a class="catalogue-tag" href="{{ site.baseurl }}/tags.html#{{ tag | slugify }}">{{ tag }}</a>
       {% endfor %}
     {% endif %}
   </div>
